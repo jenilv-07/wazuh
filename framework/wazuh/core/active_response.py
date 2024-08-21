@@ -11,7 +11,7 @@ from wazuh.core.exception import WazuhError
 from wazuh.core.utils import WazuhVersion
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
-
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 def create_message(command: str = '', custom: bool = False, arguments: list = None) -> str:
     """Create the message that will be sent.
@@ -126,8 +126,19 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     # Once we know the agent is active, store version
     agent_version = agent_info['version']
 
+    # Define a function to get agent config with a timeout
+    def get_agent_config():
+        return Agent(agent_id).get_config('com', 'active-response', agent_version)
+
+    # Use ThreadPoolExecutor to handle the timeout
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(get_agent_config)
+        try:
+            agent_conf = future.result(timeout=8)  # Timeout after 9 seconds
+        except FuturesTimeoutError:
+            raise WazuhError(1750)
+
     # Check if AR is enabled
-    agent_conf = Agent(agent_id).get_config('com', 'active-response', agent_version)
     if agent_conf['active-response']['disabled'] == 'yes':
         raise WazuhError(1750)
 
