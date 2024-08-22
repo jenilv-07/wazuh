@@ -11,10 +11,10 @@ from wazuh.rbac.decorators import expose_resources
 import multiprocessing
 from typing import List, Dict
 
-def send_command_to_agent(agent_id: str, command: str, arguments: List[str], custom: bool, alert: Dict) -> str:
+def send_command_to_agent(agent_id: str, command: str, arguments: List[str], custom: bool, alert: Dict):
     """Send command to a single agent and handle response."""
-    try:
-        with WazuhQueue(common.AR_SOCKET) as wq:
+    with WazuhQueue(common.AR_SOCKET) as wq:
+        try:
             system_agents = get_agents_info()
             if agent_id not in system_agents:
                 raise WazuhResourceNotFound(1701)
@@ -22,8 +22,8 @@ def send_command_to_agent(agent_id: str, command: str, arguments: List[str], cus
                 raise WazuhError(1703)
             active_response.send_ar_message(agent_id, wq, command, arguments, custom, alert)
             return agent_id, 'Completed'
-    except WazuhException as e:
-        return agent_id, str(e)
+        except WazuhException as e:
+            return agent_id, e
 
 def worker(agent_id: str, command: str, arguments: List[str], custom: bool, alert: Dict, result_queue: multiprocessing.Queue):
     """Worker function to handle sending commands."""
@@ -79,13 +79,15 @@ def run_command(agent_list: List[str] = None, command: str = '', arguments: List
             else:
                 # Collect result from queue
                 while not result_queue.empty():
+                    
                     agent_id, status = result_queue.get()
+                    
                     if status == 'Completed':
                         result.affected_items.append(agent_id)
                         result.total_affected_items += 1
                     else:
                         result.add_failed_item(id_=agent_id, error=status)
-        
+                        
         result.affected_items.sort(key=int)
-
+        
     return result
