@@ -597,7 +597,10 @@ class WazuhException(Exception):
         7000: {'message': 'Error trying to get logtest response'},
         7001: {'message': 'Error trying to read logtest session token',
                'remediation': 'Make sure you introduce the token within the field "token"'},
-
+        
+        # Broketn communication
+        8000: {'message': 'Could not send active-response, Agent connection in brocken',
+               'remediation': "Make sure agnet is connected with internet"},
     }
 
     # Reserve agent upgrade custom errors

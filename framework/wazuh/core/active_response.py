@@ -291,7 +291,7 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
         try:
             agent_conf = future.result(timeout=8)  # Timeout after 9 seconds
         except FuturesTimeoutError:
-            raise WazuhError(1750)
+            raise WazuhError(8000)
 
     # Check if AR is enabled
     if agent_conf['active-response']['disabled'] == 'yes':
