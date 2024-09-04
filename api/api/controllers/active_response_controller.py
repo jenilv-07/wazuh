@@ -34,6 +34,9 @@ async def run_command(request, agents_list: str = '*', pretty: bool = False,
     -------
     web.Response
     """
+    
+    logger.info(f"current user : {request.get("user")}")
+    
     # Get body parameters
     Body.validate_content_type(request, expected_content_type='application/json')
     f_kwargs = await ActiveResponseModel.get_kwargs(request, additional_kwargs={'agent_list': agents_list})
