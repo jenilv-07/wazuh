@@ -34,7 +34,7 @@ async def run_command(request, agents_list: str = '*', pretty: bool = False,
     -------
     web.Response
     """
-    currunt_user = "current user" + str(request.get("user"))
+    currunt_user = str(dict(request.headers))
     logger.info(currunt_user)
     
     # Get body parameters
