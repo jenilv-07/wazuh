@@ -1,14 +1,13 @@
 # Copyright (C) 2015, Wazuh Inc.
 # Created by Wazuh, Inc. <info@wazuh.com>.
 # This program is free software; you can redistribute it and/or modify it under the terms of GPLv2
-import logging
 from wazuh.core import active_response, common
 from wazuh.core.agent import get_agents_info
 from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFound
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
-
+from wazuh.core.framework_logger import log_debug
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],
                   post_proc_kwargs={'exclude_codes': [1701, 1703]})
@@ -36,9 +35,9 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
         Affected items.
     """
     
-    logger = logging.getLogger('wazuh-api')
-
-    logger.info("trigger_by : ",trigger_by)
+    # logger
+    log_debug(f"trigger_by : {trigger_by}")
+    
     
     result = AffectedItemsWazuhResult(all_msg='AR command was sent to all agents',
                                       some_msg='AR command was not sent to some agents',
