@@ -7,7 +7,7 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
-from wazuh.core.framework_logger import log_debug
+from wazuh.core.framework_logger import log_debug,log_error
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],
                   post_proc_kwargs={'exclude_codes': [1701, 1703]})
@@ -55,8 +55,10 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
                     active_response.send_ar_message(agent_id, wq, command, arguments, alert)
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
+                    log_debug(f"MSG SEND SUCCSES FULLY : {trigger_by}")
                 except WazuhException as e:
                     result.add_failed_item(id_=agent_id, error=e)
+                    log_error(f"MSG SEND FAIL : {trigger_by} ERROR : {e}")
             result.affected_items.sort(key=int)
 
     return result
