@@ -43,7 +43,7 @@ async def run_command(request, agents_list: str = '*', pretty: bool = False,
                                                                                 'trigger_by' : currunt_user
                                                                                 }
                                                     )
-    logger.info("f_kwrgs",f_kwargs)
+    logger.info(f"f_kwrgs : {str(f_kwargs)}")
 
     dapi = DistributedAPI(f=active_response.run_command,
                           f_kwargs=remove_nones_to_dict(f_kwargs),
