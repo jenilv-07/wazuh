@@ -39,7 +39,11 @@ async def run_command(request, agents_list: str = '*', pretty: bool = False,
     
     # Get body parameters
     Body.validate_content_type(request, expected_content_type='application/json')
-    f_kwargs = await ActiveResponseModel.get_kwargs(request, additional_kwargs={'agent_list': agents_list})
+    f_kwargs = await ActiveResponseModel.get_kwargs(request, additional_kwargs={'agent_list': agents_list,
+                                                                                'trigger_by' : currunt_user
+                                                                                }
+                                                    )
+    logger.info("f_kwrgs",f_kwargs)
 
     dapi = DistributedAPI(f=active_response.run_command,
                           f_kwargs=remove_nones_to_dict(f_kwargs),
