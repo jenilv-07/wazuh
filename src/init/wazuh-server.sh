@@ -47,6 +47,55 @@ MAX_ITERATION="10"
 MAX_KILL_TRIES=600
 
 
+# New variables for the stream broker script
+SOCKET_PATH="/var/ossec/queue/alerts/ar_stream.sock"
+SOCKET_DIR="/var/ossec/queue/alerts"
+STREAM_BROKER_SCRIPT="/var/ossec/framework/scripts/stream-broker.py"
+PYTHON_BIN="/var/ossec/framework/python/bin/python3"
+
+# Function to setup and start the stream broker
+setup_and_start_stream_broker() {
+    # Create the directory if it doesn't exist
+    if [ ! -d "$SOCKET_DIR" ]; then
+        echo "Creating directory: $SOCKET_DIR"
+        mkdir -p "$SOCKET_DIR"
+        echo "Setting permissions for the directory"
+        chmod 755 "$SOCKET_DIR"
+    fi
+
+    # Create the socket file if it doesn't exist
+    if [ ! -e "$SOCKET_PATH" ]; then
+        echo "Creating socket file: $SOCKET_PATH"
+        touch "$SOCKET_PATH"
+        echo "Setting permissions for the socket file"
+        chmod 600 "$SOCKET_PATH"
+    fi
+
+    # Ensure root owns the directory and file
+    echo "Setting ownership for the directory and socket file to root"
+    chown root:wazuh "$SOCKET_DIR"
+    chown root:wazuh "$SOCKET_PATH"
+
+    echo "Socket file and directory are ready!"
+
+    # Check if the Python script exists and run it
+    if [ -f "$STREAM_BROKER_SCRIPT" ]; then
+        echo "Found stream broker script: $STREAM_BROKER_SCRIPT"
+        echo "Running stream broker script..."
+        sudo "$PYTHON_BIN" "$STREAM_BROKER_SCRIPT" &
+        echo "Stream broker script is running in the background"
+    else
+        echo "Error: Stream broker script not found at $STREAM_BROKER_SCRIPT"
+    fi
+}
+
+# Function to stop the stream broker
+stop_stream_broker() {
+    echo "Stopping stream broker script..."
+    pkill -f "$STREAM_BROKER_SCRIPT"
+    echo "Stream broker script stopped"
+}
+
 checkpid()
 {
     for i in ${CDAEMONS}; do
@@ -295,6 +344,10 @@ start_service()
     if [ $USE_JSON = true ]; then
         echo -n '{"error":0,"data":['
     fi
+
+    # Start the stream broker
+    setup_and_start_stream_broker
+
     for i in ${SDAEMONS}; do
         ## If wazuh-maild is disabled, don't try to start it.
         if [ X"$i" = "Xwazuh-maild" ]; then
@@ -512,7 +565,7 @@ stop_service()
         fi
         rm -f ${DIR}/var/run/${i}-*.pid
     done
-
+    stop_stream_broker
     if [ $USE_JSON = true ]; then
         echo -n ']}'
     else
