@@ -598,7 +598,7 @@ manage_stream_broker() {
     local action=$1
     STREAM_BROKER="${DIR}/framework/scripts/stream_broker.py"
     STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker.pid"
-    RM_STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker*.pid"
+    RM_STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker-*.pid"
 
 
     if [ "$action" = "start" ]; then
@@ -666,7 +666,7 @@ manage_ar_trigger() {
     local action=$1
     STREAM_BROKER="${DIR}/framework/scripts/ar_trigger.py"
     STREAM_BROKER_PID_FILE="${DIR}/var/run/ar_trigger.pid"
-    RM_STREAM_BROKER_PID_FILE="${DIR}/var/run/ar_trigger*.pid"
+    RM_STREAM_BROKER_PID_FILE="${DIR}/var/run/ar-trigger-*.pid
 
     if [ "$action" = "start" ]; then
         if [ -f "$STREAM_BROKER" ]; then
