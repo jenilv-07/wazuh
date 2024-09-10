@@ -598,8 +598,6 @@ manage_stream_broker() {
     local action=$1
     STREAM_BROKER="${DIR}/framework/scripts/stream_broker.py"
     STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker.pid"
-    RM_STREAM_BROKER_PID="${DIR}/var/run/*stream_broker*.pid"
-
 
     if [ "$action" = "start" ]; then
         if [ -f "$STREAM_BROKER" ]; then
@@ -653,7 +651,7 @@ manage_stream_broker() {
                     kill -9 $STREAM_BROKER_PID
                 fi
             fi
-            rm -f $RM_STREAM_BROKER_PID
+            rm -f $STREAM_BROKER_PID_FILE
         else
             if [ $USE_JSON != true ]; then
                 echo "stream-broker service not running."
@@ -666,7 +664,6 @@ manage_ar_trigger() {
     local action=$1
     AR_TRIGGER="${DIR}/framework/scripts/ar_trigger.py"
     AR_TRIGGER_PID_FILE="${DIR}/var/run/ar_trigger.pid"
-    RM_AR_TRIGGER_PID="${DIR}/var/run/*ar-trigger*.pid"
 
     if [ "$action" = "start" ]; then
         if [ -f "$AR_TRIGGER" ]; then
@@ -720,7 +717,7 @@ manage_ar_trigger() {
                     kill -9 $AR_TRIGGER_PID
                 fi
             fi
-            rm -f $RM_AR_TRIGGER_PID
+            rm -f $AR_TRIGGER_PID_FILE
         else
             if [ $USE_JSON != true ]; then
                 echo "ar_trigger service not running."
