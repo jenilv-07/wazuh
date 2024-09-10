@@ -666,7 +666,7 @@ manage_ar_trigger() {
     local action=$1
     AR_TRIGGER="${DIR}/framework/scripts/ar_trigger.py"
     AR_TRIGGER_PID_FILE="${DIR}/var/run/ar_trigger.pid"
-    RM_AR_TRIGGER_PID="${DIR}/var/run/*ar-trigger*.pid
+    RM_AR_TRIGGER_PID="${DIR}/var/run/*ar-trigger*.pid"
 
     if [ "$action" = "start" ]; then
         if [ -f "$AR_TRIGGER" ]; then
