@@ -7,6 +7,8 @@ import pwd
 import grp
 import logging
 import sys
+import signal
+from wazuh.core import pyDaemonModule
 
 # Define the logger
 logger = logging.getLogger('stream-broker')
@@ -19,10 +21,17 @@ logger.addHandler(file_handler)
 
 # Path for the Unix socket file
 SOCKET_PATH = '/var/ossec/queue/alerts/ar_stream.sock'
+PID_FILE = '/var/run/stream_broker.pid'
 
 # Remove the socket file if it already exists
 if os.path.exists(SOCKET_PATH):
     os.remove(SOCKET_PATH)
+
+def exit_handler(signum, frame):
+    """Handle exit signals and remove PID file."""
+    logger.info("Caught signal, exiting and cleaning up.")
+    pyDaemonModule.delete_pid('stream-broker', os.getpid())  # Remove PID file on exit
+    sys.exit(0)
 
 async def handle_client(reader, writer):
     address = writer.get_extra_info('peername')
@@ -63,47 +72,16 @@ async def start_server():
         logger.info(f"Server listening on {SOCKET_PATH}")
         await server.serve_forever()
 
-def daemonize():
-    """Daemonize the process using double fork."""
-    try:
-        # First fork
-        pid = os.fork()
-        if pid > 0:
-            # Exit the parent process
-            sys.exit(0)
-    except OSError as e:
-        sys.stderr.write(f"Fork #1 failed: {e.errno} ({e.strerror})\n")
-        sys.exit(1)
-
-    # Decouple from the parent environment
-    os.chdir('/')
-    os.setsid()
-    os.umask(0)
-
-    try:
-        # Second fork
-        pid = os.fork()
-        if pid > 0:
-            # Exit the second parent process
-            sys.exit(0)
-    except OSError as e:
-        sys.stderr.write(f"Fork #2 failed: {e.errno} ({e.strerror})\n")
-        sys.exit(1)
-
-    # Redirect standard file descriptors to /dev/null
-    sys.stdout.flush()
-    sys.stderr.flush()
-    with open('/dev/null', 'w') as dev_null:
-        os.dup2(dev_null.fileno(), sys.stdin.fileno())
-        os.dup2(dev_null.fileno(), sys.stdout.fileno())
-        os.dup2(dev_null.fileno(), sys.stderr.fileno())
-
 def run_in_foreground():
+    """Run the service in the foreground."""
+    pyDaemonModule.create_pid('stream-broker', os.getpid())  # Create PID file for foreground mode
     asyncio.run(start_server())
 
 def run_in_background():
-    daemonize()
-    run_in_foreground()
+    """Daemonize the process and run it in the background."""
+    pyDaemonModule.pyDaemon()  # Use pyDaemonModule for background daemonization
+    pyDaemonModule.create_pid('stream-broker', os.getpid())  # Create PID file for background mode
+    run_in_foreground()  # Run the service after daemonizing
 
 def main():
     # Setup argparse for handling the CLI arguments
@@ -125,7 +103,6 @@ def main():
         help="Enable debug mode to get more verbose output."
     )
 
-
     args = parser.parse_args()
 
     # Set logging level based on debug flag
@@ -134,6 +111,10 @@ def main():
         logger.debug("Debug mode enabled.")
     else:
         logger.setLevel(logging.INFO)
+
+    # Handle process termination signals
+    signal.signal(signal.SIGTERM, exit_handler)
+    signal.signal(signal.SIGINT, exit_handler)
 
     # Determine whether to run in the foreground or background
     if args.foreground:
