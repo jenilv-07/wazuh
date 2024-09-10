@@ -46,56 +46,6 @@ MAX_ITERATION="10"
 
 MAX_KILL_TRIES=600
 
-
-# New variables for the stream broker script
-SOCKET_PATH="/var/ossec/queue/alerts/ar_stream.sock"
-SOCKET_DIR="/var/ossec/queue/alerts"
-STREAM_BROKER_SCRIPT="/var/ossec/framework/scripts/stream-broker.py"
-PYTHON_BIN="/var/ossec/framework/python/bin/python3"
-
-# Function to setup and start the stream broker
-setup_and_start_stream_broker() {
-    # Create the directory if it doesn't exist
-    if [ ! -d "$SOCKET_DIR" ]; then
-        echo "Creating directory: $SOCKET_DIR"
-        mkdir -p "$SOCKET_DIR"
-        echo "Setting permissions for the directory"
-        chmod 755 "$SOCKET_DIR"
-    fi
-
-    # Create the socket file if it doesn't exist
-    if [ ! -e "$SOCKET_PATH" ]; then
-        echo "Creating socket file: $SOCKET_PATH"
-        touch "$SOCKET_PATH"
-        echo "Setting permissions for the socket file"
-        chmod 600 "$SOCKET_PATH"
-    fi
-
-    # Ensure root owns the directory and file
-    echo "Setting ownership for the directory and socket file to root"
-    chown root:wazuh "$SOCKET_DIR"
-    chown root:wazuh "$SOCKET_PATH"
-
-    echo "Socket file and directory are ready!"
-
-    # Check if the Python script exists and run it
-    if [ -f "$STREAM_BROKER_SCRIPT" ]; then
-        echo "Found stream broker script: $STREAM_BROKER_SCRIPT"
-        echo "Running stream broker script..."
-        sudo "$PYTHON_BIN" "$STREAM_BROKER_SCRIPT" &
-        echo "Stream broker script is running in the background"
-    else
-        echo "Error: Stream broker script not found at $STREAM_BROKER_SCRIPT"
-    fi
-}
-
-# Function to stop the stream broker
-stop_stream_broker() {
-    echo "Stopping stream broker script..."
-    pkill -f "$STREAM_BROKER_SCRIPT"
-    echo "Stream broker script stopped"
-}
-
 checkpid()
 {
     for i in ${CDAEMONS}; do
@@ -345,8 +295,6 @@ start_service()
         echo -n '{"error":0,"data":['
     fi
 
-    # Start the stream broker
-    setup_and_start_stream_broker
 
     for i in ${SDAEMONS}; do
         ## If wazuh-maild is disabled, don't try to start it.
@@ -444,6 +392,9 @@ start_service()
             fi
         fi
     done
+
+    # Start the stream-broker service
+    manage_stream_broker "start"
 
     # After we start we give 2 seconds for the daemons
     # to internally create their PID files.
@@ -565,7 +516,10 @@ stop_service()
         fi
         rm -f ${DIR}/var/run/${i}-*.pid
     done
-    stop_stream_broker
+
+    # Stop the stream-broker service
+    manage_stream_broker "stop"
+
     if [ $USE_JSON = true ]; then
         echo -n ']}'
     else
@@ -611,6 +565,75 @@ restart_service()
     rm -f ${DIR}/var/run/.restart
     unlock
 }
+
+### STREAM BROCKER ###
+
+manage_stream_broker() {
+    local action=$1
+    STREAM_BROKER="${DIR}/framework/scripts/stream-broker.py"
+    STREAM_BROKER_PID_FILE="${DIR}/var/run/stream-broker.pid"
+
+    if [ "$action" = "start" ]; then
+        if [ -f "$STREAM_BROKER" ]; then
+            if [ $USE_JSON = true ]; then
+                echo -n '{"daemon":"stream-broker","status":"starting"}'
+            else
+                echo "Starting stream-broker service..."
+            fi
+
+            ${DIR}/framework/python/bin/python3 ${STREAM_BROKER} &
+            STREAM_BROKER_PID=$!
+            echo $STREAM_BROKER_PID > $STREAM_BROKER_PID_FILE
+
+            if [ $? = 0 ]; then
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"stream-broker","status":"running"}'
+                else
+                    echo "Started stream-broker service."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"stream-broker","status":"error"}'
+                else
+                    echo "stream-broker service failed to start."
+                fi
+                exit 1
+            fi
+        else
+            echo "stream-broker service script not found!"
+        fi
+
+    elif [ "$action" = "stop" ]; then
+        if [ -f "$STREAM_BROKER_PID_FILE" ]; then
+            STREAM_BROKER_PID=$(cat $STREAM_BROKER_PID_FILE)
+            if [ $USE_JSON != true ]; then
+                echo "Stopping stream-broker service..."
+            fi
+            kill $STREAM_BROKER_PID
+
+            if wait_pid $STREAM_BROKER_PID; then
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"stream-broker","status":"killed"}'
+                else
+                    echo "stream-broker service stopped."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"stream-broker","status":"failed to kill"}'
+                else
+                    echo "stream-broker service couldn't be terminated. It will be killed.";
+                    kill -9 $STREAM_BROKER_PID
+                fi
+            fi
+            rm -f $STREAM_BROKER_PID_FILE
+        else
+            if [ $USE_JSON != true ]; then
+                echo "stream-broker service not running."
+            fi
+        fi
+    fi
+}
+
 
 ### MAIN HERE ###
 
