@@ -13,7 +13,7 @@ logger = logging.getLogger('stream-broker')
 
 log_file = '/var/ossec/logs/stream-broker.log'
 file_handler = logging.FileHandler(log_file)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levellevel)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
@@ -125,11 +125,6 @@ def main():
         help="Enable debug mode to get more verbose output."
     )
 
-    # Help is automatically added by argparse, but we can call it explicitly for completeness
-    parser.add_argument(
-        '-h', '--help', action='help',
-        help="Show this help message and exit."
-    )
 
     args = parser.parse_args()
 
