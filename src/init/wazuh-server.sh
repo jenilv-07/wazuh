@@ -394,7 +394,7 @@ start_service()
     done
 
     # Start the stream-broker service
-    # manage_stream_broker "start"
+    manage_stream_broker "start"
 
     # After we start we give 2 seconds for the daemons
     # to internally create their PID files.
@@ -518,7 +518,7 @@ stop_service()
     done
 
     # Stop the stream-broker service
-    # manage_stream_broker "stop"
+    manage_stream_broker "stop"
 
     if [ $USE_JSON = true ]; then
         echo -n ']}'
@@ -568,71 +568,71 @@ restart_service()
 
 ### STREAM BROCKER ###
 
-# manage_stream_broker() {
-#     local action=$1
-#     STREAM_BROKER="${DIR}/framework/scripts/stream-broker.py"
-#     STREAM_BROKER_PID_FILE="${DIR}/var/run/stream-broker.pid"
+manage_stream_broker() {
+    local action=$1
+    STREAM_BROKER="${DIR}/framework/scripts/stream-broker.py"
+    STREAM_BROKER_PID_FILE="${DIR}/var/run/stream-broker.pid"
 
-#     if [ "$action" = "start" ]; then
-#         if [ -f "$STREAM_BROKER" ]; then
-#             if [ $USE_JSON = true ]; then
-#                 echo -n '{"daemon":"stream-broker","status":"starting"}'
-#             else
-#                 echo "Starting stream-broker service..."
-#             fi
+    if [ "$action" = "start" ]; then
+        if [ -f "$STREAM_BROKER" ]; then
+            if [ $USE_JSON = true ]; then
+                echo -n '{"daemon":"stream-broker","status":"starting"}'
+            else
+                echo "Starting stream-broker service..."
+            fi
 
-#             ${DIR}/framework/python/bin/python3 ${STREAM_BROKER} &
-#             STREAM_BROKER_PID=$!
-#             echo $STREAM_BROKER_PID > $STREAM_BROKER_PID_FILE
+            ${DIR}/framework/python/bin/python3 ${STREAM_BROKER} &
+            STREAM_BROKER_PID=$!
+            echo $STREAM_BROKER_PID > $STREAM_BROKER_PID_FILE
 
-#             if [ $? = 0 ]; then
-#                 if [ $USE_JSON = true ]; then
-#                     echo -n '{"daemon":"stream-broker","status":"running"}'
-#                 else
-#                     echo "Started stream-broker service."
-#                 fi
-#             else
-#                 if [ $USE_JSON = true ]; then
-#                     echo -n '{"daemon":"stream-broker","status":"error"}'
-#                 else
-#                     echo "stream-broker service failed to start."
-#                 fi
-#                 exit 1
-#             fi
-#         else
-#             echo "stream-broker service script not found!"
-#         fi
+            if [ $? = 0 ]; then
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"stream-broker","status":"running"}'
+                else
+                    echo "Started stream-broker service."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"stream-broker","status":"error"}'
+                else
+                    echo "stream-broker service failed to start."
+                fi
+                exit 1
+            fi
+        else
+            echo "stream-broker service script not found!"
+        fi
 
-#     elif [ "$action" = "stop" ]; then
-#         if [ -f "$STREAM_BROKER_PID_FILE" ]; then
-#             STREAM_BROKER_PID=$(cat $STREAM_BROKER_PID_FILE)
-#             if [ $USE_JSON != true ]; then
-#                 echo "Stopping stream-broker service..."
-#             fi
-#             kill $STREAM_BROKER_PID
+    elif [ "$action" = "stop" ]; then
+        if [ -f "$STREAM_BROKER_PID_FILE" ]; then
+            STREAM_BROKER_PID=$(cat $STREAM_BROKER_PID_FILE)
+            if [ $USE_JSON != true ]; then
+                echo "Stopping stream-broker service..."
+            fi
+            kill $STREAM_BROKER_PID
 
-#             if wait_pid $STREAM_BROKER_PID; then
-#                 if [ $USE_JSON = true ]; then
-#                     echo -n ',{"daemon":"stream-broker","status":"killed"}'
-#                 else
-#                     echo "stream-broker service stopped."
-#                 fi
-#             else
-#                 if [ $USE_JSON = true ]; then
-#                     echo -n ',{"daemon":"stream-broker","status":"failed to kill"}'
-#                 else
-#                     echo "stream-broker service couldn't be terminated. It will be killed.";
-#                     kill -9 $STREAM_BROKER_PID
-#                 fi
-#             fi
-#             rm -f $STREAM_BROKER_PID_FILE
-#         else
-#             if [ $USE_JSON != true ]; then
-#                 echo "stream-broker service not running."
-#             fi
-#         fi
-#     fi
-# }
+            if wait_pid $STREAM_BROKER_PID; then
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"stream-broker","status":"killed"}'
+                else
+                    echo "stream-broker service stopped."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"stream-broker","status":"failed to kill"}'
+                else
+                    echo "stream-broker service couldn't be terminated. It will be killed.";
+                    kill -9 $STREAM_BROKER_PID
+                fi
+            fi
+            rm -f $STREAM_BROKER_PID_FILE
+        else
+            if [ $USE_JSON != true ]; then
+                echo "stream-broker service not running."
+            fi
+        fi
+    fi
+}
 
 
 ### MAIN HERE ###
