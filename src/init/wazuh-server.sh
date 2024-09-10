@@ -570,8 +570,8 @@ restart_service()
 
 manage_stream_broker() {
     local action=$1
-    STREAM_BROKER="${DIR}/framework/scripts/stream-broker.py"
-    STREAM_BROKER_PID_FILE="${DIR}/var/run/stream-broker.pid"
+    STREAM_BROKER="${DIR}/framework/scripts/stream_broker.py"
+    STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker.pid"
 
     if [ "$action" = "start" ]; then
         if [ -f "$STREAM_BROKER" ]; then
