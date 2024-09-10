@@ -395,6 +395,7 @@ start_service()
 
     # Start the stream-broker service
     manage_stream_broker "start"
+    manage_ar_trigger "start"
 
     # After we start we give 2 seconds for the daemons
     # to internally create their PID files.
@@ -519,6 +520,7 @@ stop_service()
 
     # Stop the stream-broker service
     manage_stream_broker "stop"
+    manage_ar_trigger "stop"
 
     if [ $USE_JSON = true ]; then
         echo -n ']}'
@@ -569,6 +571,30 @@ restart_service()
 ### STREAM BROCKER ###
 
 manage_stream_broker() {
+
+    # Create the directory if it doesn't exist
+    if [ ! -d "$SOCKET_DIR" ]; then
+        echo "Creating directory: $SOCKET_DIR"
+        mkdir -p "$SOCKET_DIR"
+        echo "Setting permissions for the directory"
+        chmod 755 "$SOCKET_DIR"
+    fi
+
+    # Create the socket file if it doesn't exist
+    if [ ! -e "$SOCKET_PATH" ]; then
+        echo "Creating socket file: $SOCKET_PATH"
+        touch "$SOCKET_PATH"
+        echo "Setting permissions for the socket file"
+        chmod 600 "$SOCKET_PATH"
+    fi
+
+    # Ensure root owns the directory and file
+    echo "Setting ownership for the directory and socket file to root"
+    chown root:wazuh "$SOCKET_DIR"
+    chown root:wazuh "$SOCKET_PATH"
+
+    echo "Socket file and directory are ready!"
+
     local action=$1
     STREAM_BROKER="${DIR}/framework/scripts/stream_broker.py"
     STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker.pid"
@@ -633,6 +659,73 @@ manage_stream_broker() {
         fi
     fi
 }
+
+manage_ar_trigger() {
+    local action=$1
+    STREAM_BROKER="${DIR}/framework/scripts/ar_trigger.py"
+    STREAM_BROKER_PID_FILE="${DIR}/var/run/ar_trigger.pid"
+
+    if [ "$action" = "start" ]; then
+        if [ -f "$STREAM_BROKER" ]; then
+            if [ $USE_JSON = true ]; then
+                echo -n '{"daemon":"ar_trigger","status":"starting"}'
+            else
+                echo "Starting stream-broker service..."
+            fi
+
+            ${DIR}/framework/python/bin/python3 ${STREAM_BROKER} &
+            STREAM_BROKER_PID=$!
+            echo $STREAM_BROKER_PID > $STREAM_BROKER_PID_FILE
+
+            if [ $? = 0 ]; then
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"ar_trigger","status":"running"}'
+                else
+                    echo "Started ar_trigger service."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n '{"daemon":"ar_trigger","status":"error"}'
+                else
+                    echo "ar_trigger service failed to start."
+                fi
+                exit 1
+            fi
+        else
+            echo "at_trigger service script not found!"
+        fi
+
+    elif [ "$action" = "stop" ]; then
+        if [ -f "$STREAM_BROKER_PID_FILE" ]; then
+            STREAM_BROKER_PID=$(cat $STREAM_BROKER_PID_FILE)
+            if [ $USE_JSON != true ]; then
+                echo "Stopping ar_trigger service..."
+            fi
+            kill $STREAM_BROKER_PID
+
+            if wait_pid $STREAM_BROKER_PID; then
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"ar_trigger","status":"killed"}'
+                else
+                    echo "ar_trigger service stopped."
+                fi
+            else
+                if [ $USE_JSON = true ]; then
+                    echo -n ',{"daemon":"ar_trigger","status":"failed to kill"}'
+                else
+                    echo "ar_trigger service couldn't be terminated. It will be killed.";
+                    kill -9 $STREAM_BROKER_PID
+                fi
+            fi
+            rm -f $STREAM_BROKER_PID_FILE
+        else
+            if [ $USE_JSON != true ]; then
+                echo "ar_trigger service not running."
+            fi
+        fi
+    fi
+}
+
 
 
 ### MAIN HERE ###
