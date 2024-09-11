@@ -651,6 +651,11 @@ manage_stream_broker() {
                     kill -9 $STREAM_BROKER_PID
                 fi
             fi
+            for pid_file in /var/ossec/var/run/stream-broker*.pid; do
+                kill -9 $(cat "$pid_file")
+            done
+            rm /var/ossec/var/run/stream-broker*.pid
+
             rm -f $STREAM_BROKER_PID_FILE
         else
             if [ $USE_JSON != true ]; then
@@ -717,7 +722,13 @@ manage_ar_trigger() {
                     kill -9 $AR_TRIGGER_PID
                 fi
             fi
+            for pid_file in /var/ossec/var/run/ar-trigger*.pid; do
+                kill -9 $(cat "$pid_file")
+            done
+            rm /var/ossec/var/run/ar-trigger*.pid
+
             rm -f $AR_TRIGGER_PID_FILE
+        
         else
             if [ $USE_JSON != true ]; then
                 echo "ar_trigger service not running."

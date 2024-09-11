@@ -106,9 +106,12 @@ class JetStreamConsumer:
             async for msg in sub.messages:
                 logger.info(f"Message received from {sub}")
                 await self.process_message(msg)
-
+        except KeyboardInterrupt:
+            logger.error(f"ar_trigger servic stoped...")
         except Exception as e:
             logger.error(f"Error while consuming messages: {e}")
+        finally:
+            await self.js.drain()
 
     async def process_message(self, msg):
         try:
