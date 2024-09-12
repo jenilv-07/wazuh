@@ -571,30 +571,6 @@ restart_service()
 ### STREAM BROCKER ###
 
 manage_stream_broker() {
-
-    # Create the directory if it doesn't exist
-    if [ ! -d "$SOCKET_DIR" ]; then
-        echo "Creating directory: $SOCKET_DIR"
-        mkdir -p "$SOCKET_DIR"
-        echo "Setting permissions for the directory"
-        chmod 755 "$SOCKET_DIR"
-    fi
-
-    # Create the socket file if it doesn't exist
-    if [ ! -e "$SOCKET_PATH" ]; then
-        echo "Creating socket file: $SOCKET_PATH"
-        touch "$SOCKET_PATH"
-        echo "Setting permissions for the socket file"
-        chmod 600 "$SOCKET_PATH"
-    fi
-
-    # Ensure root owns the directory and file
-    echo "Setting ownership for the directory and socket file to root"
-    chown root:wazuh "$SOCKET_DIR"
-    chown root:wazuh "$SOCKET_PATH"
-
-    echo "Socket file and directory are ready!"
-
     local action=$1
     STREAM_BROKER="${DIR}/framework/scripts/stream_broker.py"
     STREAM_BROKER_PID_FILE="${DIR}/var/run/stream_broker.pid"
@@ -635,7 +611,10 @@ manage_stream_broker() {
             if [ $USE_JSON != true ]; then
                 echo "Stopping stream-broker service..."
             fi
-            kill $STREAM_BROKER_PID
+
+            for pid_file in /var/ossec/var/run/stream-broker*.pid; do
+                kill -9 $(cat "$pid_file")
+            done
 
             if wait_pid $STREAM_BROKER_PID; then
                 if [ $USE_JSON = true ]; then
@@ -648,15 +627,16 @@ manage_stream_broker() {
                     echo -n ',{"daemon":"stream-broker","status":"failed to kill"}'
                 else
                     echo "stream-broker service couldn't be terminated. It will be killed.";
-                    kill -9 $STREAM_BROKER_PID
+                    
+                    for pid_file in /var/ossec/var/run/stream-broker*.pid; do
+                        kill -9 $(cat "$pid_file")
+                    done
+
                 fi
             fi
-            for pid_file in /var/ossec/var/run/stream-broker*.pid; do
-                kill -9 $(cat "$pid_file")
-            done
+            
             rm /var/ossec/var/run/stream-broker*.pid
 
-            rm -f $STREAM_BROKER_PID_FILE
         else
             if [ $USE_JSON != true ]; then
                 echo "stream-broker service not running."
@@ -706,7 +686,10 @@ manage_ar_trigger() {
             if [ $USE_JSON != true ]; then
                 echo "Stopping ar_trigger service..."
             fi
-            kill $AR_TRIGGER_PID
+            
+            for pid_file in /var/ossec/var/run/ar-trigger*.pid; do
+                kill -9 $(cat "$pid_file")
+            done
 
             if wait_pid $AR_TRIGGER_PID; then
                 if [ $USE_JSON = true ]; then
@@ -719,15 +702,15 @@ manage_ar_trigger() {
                     echo -n ',{"daemon":"ar_trigger","status":"failed to kill"}'
                 else
                     echo "ar_trigger service couldn't be terminated. It will be killed.";
-                    kill -9 $AR_TRIGGER_PID
+                    
+                    for pid_file in /var/ossec/var/run/ar-trigger*.pid; do
+                        kill -9 $(cat "$pid_file")
+                    done
+
                 fi
             fi
-            for pid_file in /var/ossec/var/run/ar-trigger*.pid; do
-                kill -9 $(cat "$pid_file")
-            done
+            
             rm /var/ossec/var/run/ar-trigger*.pid
-
-            rm -f $AR_TRIGGER_PID_FILE
         
         else
             if [ $USE_JSON != true ]; then

@@ -2,6 +2,7 @@
 # Created by Wazuh, Inc. <info@wazuh.com>.
 # This program is free software; you can redistribute it and/or modify it under the terms of GPLv2
 import socket
+import uuid
 
 from wazuh.core import active_response, common
 from wazuh.core.agent import get_agents_info
@@ -54,6 +55,7 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
                         raise WazuhResourceNotFound(1701)
                     if agent_id == "000":
                         raise WazuhError(1703)
+                    arguments.append[uuid.uuid4()]
                     active_response.send_ar_message(agent_id, wq, command, arguments, alert)
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
