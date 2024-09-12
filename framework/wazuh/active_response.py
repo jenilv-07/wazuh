@@ -10,7 +10,7 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
-from wazuh.core.framework_logger import log_debug,log_error,log_info
+from wazuh.core.framework_logger import log_debug, log_error, log_info
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],
                   post_proc_kwargs={'exclude_codes': [1701, 1703]})
@@ -41,7 +41,6 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
     # logger
     log_debug(f"trigger_by : {trigger_by}")
     
-    
     result = AffectedItemsWazuhResult(all_msg='AR command was sent to all agents',
                                       some_msg='AR command was not sent to some agents',
                                       none_msg='AR command was not sent to any agent'
@@ -55,15 +54,25 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
                         raise WazuhResourceNotFound(1701)
                     if agent_id == "000":
                         raise WazuhError(1703)
-                    arguments.append[uuid.uuid4()]
-                    active_response.send_ar_message(agent_id, wq, command, arguments, alert)
+
+                    # Generate a new UUID for each iteration
+                    new_uuid = str(uuid.uuid4())
+
+                    # Append the UUID to the arguments list
+                    current_arguments = arguments.copy() if arguments else []
+                    current_arguments.append(f"UUID: {new_uuid}")
+
+                    # Send the active response message with the updated arguments
+                    active_response.send_ar_message(agent_id, wq, command, current_arguments, alert)
+
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
-                    log_debug(f"MSG SEND SUCCSES FULLY : {trigger_by}")
+                    log_debug(f"MSG SEND SUCCESSFULLY : {trigger_by}, UUID: {new_uuid}")
                     ar_log_forwoder(trigger_by)
+
                 except WazuhException as e:
                     result.add_failed_item(id_=agent_id, error=e)
-                    log_error(f"MSG SEND FAIL : {trigger_by} ERROR : {e}")
+                    log_error(f"MSG SEND FAIL : {trigger_by}, ERROR: {e}")
             result.affected_items.sort(key=int)
 
     return result
@@ -74,16 +83,16 @@ def ar_log_forwoder(log):
         # Connect to the server socket
         try:
             client_socket.connect(SOCKET_PATH)
-            log_info(f"conneted with stream-brocker {SOCKET_PATH}")
+            log_info(f"connected with stream-broker {SOCKET_PATH}")
         except Exception as e:
-            log_error(f"connection error : {e}")
+            log_error(f"connection error: {e}")
             
         try:
             client_socket.sendall(log.encode())  # Send data to the server
-            log_info(f"Msg send to the stream-brocker")
+            log_info(f"Msg sent to the stream-broker")
             
         except Exception as e:
-            log_error(f"send error : {e}")
+            log_error(f"send error: {e}")
             
         data = client_socket.recv(1024)  # Receive response from the server
-        log_info(f"Receive response from the server : {data}")
+        log_info(f"Received response from the server: {data}")
