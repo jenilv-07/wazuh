@@ -60,7 +60,7 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
 
                     # Append the UUID to the arguments list
                     current_arguments = arguments.copy() if arguments else []
-                    current_arguments.append(f"UUID: {new_uuid}")
+                    current_arguments.append(f"id={new_uuid}")
 
                     # Send the active response message with the updated arguments
                     active_response.send_ar_message(agent_id, wq, command, current_arguments, alert)
