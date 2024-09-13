@@ -67,7 +67,7 @@ def run_command(agent_list: list = None, trigger_by: str = "", command: str = ''
 
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
-                    log_debug(f"MSG SEND SUCCESSFULLY : {trigger_by}, UUID: {new_uuid}")
+                    log_debug(f"MSG SEND SUCCESSFULLY : {trigger_by}, id={new_uuid}")
                     ar_log_forwoder(trigger_by)
 
                 except WazuhException as e:
