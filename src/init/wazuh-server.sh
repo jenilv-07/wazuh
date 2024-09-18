@@ -577,11 +577,11 @@ manage_stream_broker() {
 
     if [ "$action" = "start" ]; then
         if [ -f "$STREAM_BROKER" ]; then
-            if [ $USE_JSON = true ]; then
-                echo -n '{"daemon":"stream-broker","status":"starting"}'
-            else
-                echo "Starting stream-broker service..."
-            fi
+            # if [ $USE_JSON = true ]; then
+            #     echo -n '{"daemon":"stream-broker","status":"starting"}'
+            # else
+            #     echo "Starting stream-broker service..."
+            # fi
 
             ${DIR}/framework/python/bin/python3 ${STREAM_BROKER} &
             STREAM_BROKER_PID=$!
@@ -591,7 +591,7 @@ manage_stream_broker() {
                 if [ $USE_JSON = true ]; then
                     echo -n '{"daemon":"stream-broker","status":"running"}'
                 else
-                    echo "Started stream-broker service."
+                    echo "Started stream-broker..."
                 fi
             else
                 if [ $USE_JSON = true ]; then
@@ -608,9 +608,9 @@ manage_stream_broker() {
     elif [ "$action" = "stop" ]; then
         if [ -f "$STREAM_BROKER_PID_FILE" ]; then
             STREAM_BROKER_PID=$(cat $STREAM_BROKER_PID_FILE)
-            if [ $USE_JSON != true ]; then
-                echo "Stopping stream-broker service..."
-            fi
+            # if [ $USE_JSON != true ]; then
+            #     echo "Stopping stream-broker service..."
+            # fi
 
             for pid_file in /var/ossec/var/run/stream-broker*.pid; do
                 kill -9 $(cat "$pid_file")
@@ -620,7 +620,7 @@ manage_stream_broker() {
                 if [ $USE_JSON = true ]; then
                     echo -n ',{"daemon":"stream-broker","status":"killed"}'
                 else
-                    echo "stream-broker service stopped."
+                    echo "Killing stream-broker..."
                 fi
             else
                 if [ $USE_JSON = true ]; then
@@ -652,11 +652,11 @@ manage_ar_trigger() {
 
     if [ "$action" = "start" ]; then
         if [ -f "$AR_TRIGGER" ]; then
-            if [ $USE_JSON = true ]; then
-                echo -n '{"daemon":"ar_trigger","status":"starting"}'
-            else
-                echo "Starting stream-broker service..."
-            fi
+            # if [ $USE_JSON = true ]; then
+            #     echo -n '{"daemon":"ar_trigger","status":"starting"}'
+            # else
+            #     echo "Starting stream-broker service..."
+            # fi
 
             ${DIR}/framework/python/bin/python3 ${AR_TRIGGER} &
             AR_TRIGGER_PID=$!
@@ -666,7 +666,7 @@ manage_ar_trigger() {
                 if [ $USE_JSON = true ]; then
                     echo -n '{"daemon":"ar_trigger","status":"running"}'
                 else
-                    echo "Started ar_trigger service."
+                    echo "Started ar_trigger..."
                 fi
             else
                 if [ $USE_JSON = true ]; then
@@ -683,19 +683,24 @@ manage_ar_trigger() {
     elif [ "$action" = "stop" ]; then
         if [ -f "$AR_TRIGGER_PID_FILE" ]; then
             AR_TRIGGER_PID=$(cat $AR_TRIGGER_PID_FILE)
-            if [ $USE_JSON != true ]; then
-                echo "Stopping ar_trigger service..."
-            fi
+            # if [ $USE_JSON != true ]; then
+            #     echo "Stopping ar_trigger service..."
+            # fi
             
-            for pid_file in /var/ossec/var/run/ar-trigger*.pid; do
-                kill -9 $(cat "$pid_file")
+            for pid_file in /var/ossec/var/run/stream-broker*.pid; do
+                pid=$(cat "$pid_file" 2>/dev/null)
+                if [ -n "$pid" ]; then
+                    kill -9 "$pid"
+                else
+                    sleep 1
+                fi
             done
 
             if wait_pid $AR_TRIGGER_PID; then
                 if [ $USE_JSON = true ]; then
                     echo -n ',{"daemon":"ar_trigger","status":"killed"}'
                 else
-                    echo "ar_trigger service stopped."
+                    echo "Killing ar_trigger..."
                 fi
             else
                 if [ $USE_JSON = true ]; then
