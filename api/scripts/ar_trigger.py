@@ -148,19 +148,33 @@ def run_in_background():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AR Trigger Service with foreground and debug modes.")
     parser.add_argument('-f', '--foreground', action='store_true', help="Run in foreground mode.")
-    parser.add_argument('-d', '--debug', action='store_true', help="Enable debug mode.")
+    parser.add_argument('-d', '--debug', action='count', help="Enable debug messages. Use twice to increase verbosity.")
     parser.add_argument('-V', help="Print version", action='store_true', dest="version")
-    parser.add_argument('-t', help="Test configuration", action='store_true', dest='test_config')
-    parser.add_argument('-r', help="Run as root", action='store_true', dest='root')
-    parser.add_argument('-c', help="Configuration file to use", type=str, metavar='config', dest='config_file')
-    parser.add_argument('-d', help="Enable debug messages. Use twice to increase verbosity.", action='count',
-                        dest='debug_level')
+    parser.add_argument('-t', '--test-config', action='store_false', dest='test_config', help="Test configuration.")
+    parser.add_argument('-r', '--root', action='store_true', dest='root', help="Run as root.")
+    parser.add_argument('-c', '--config-file', type=str, metavar='config', dest='config_file', help="Configuration file to use.")
+    
     args = parser.parse_args()
+
+    # Handle version print
+    if args.version:
+        print("AR Trigger Service version 1.0")
+
+    # Handle test configuration
+    if args.test_config:
+        pass
+
+    # Handle running as root (optional)
+    if args.root:
+        pass
+
+    # Handle configuration file loading (optional)
+    if args.config_file:
+        pass
 
     # Configure logging for debug mode
     if args.debug:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("Debug mode enabled.")
+        pass
 
     # Handle termination signals for cleanup
     signal.signal(signal.SIGTERM, exit_handler)
