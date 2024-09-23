@@ -30,7 +30,7 @@ logger.addHandler(file_handler)
 def exit_handler(signum, frame):
     """Handle exit signals and remove PID file."""
     logger.info("Caught signal, exiting and cleaning up.")
-    pyDaemonModule.delete_pid("ar-trigger", os.getpid())  # Remove PID file on exit
+    pyDaemonModule.delete_pid("ar_trigger", os.getpid())  # Remove PID file on exit
     sys.exit(0)
     
 def read_node_type(file_path):
