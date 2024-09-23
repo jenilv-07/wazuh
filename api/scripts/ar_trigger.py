@@ -5,6 +5,7 @@ import argparse
 import os
 import sys
 import signal
+import time
 from wazuh.core.common import AR_SOCKET #, AR_TRIGGERED_LOG
 # from wazuh.core.customUtils import XDR_STREAM_BASE_URL
 from wazuh.core import pyDaemonModule
@@ -31,6 +32,38 @@ def exit_handler(signum, frame):
     logger.info("Caught signal, exiting and cleaning up.")
     pyDaemonModule.delete_pid("ar-trigger", os.getpid())  # Remove PID file on exit
     sys.exit(0)
+    
+def read_node_type(file_path):
+    """Read the ossec.conf file and return the node_type value."""
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                if '<node_type>' in line:
+                    return line.strip().split('>')[1].split('<')[0]
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return None
+
+def read_disabled(file_path):
+    """Read the ossec.conf file and return the disabled value."""
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                if '<disabled>' in line:
+                    return line.strip().split('>')[1].split('<')[0]
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return None
+
+file_path = '/var/ossec/etc/ossec.conf'
+node_type = read_node_type(file_path)
+cluster = read_disabled(file_path)
+
+
 
 class UnixSocketClient:
     OS_MAXSTR = 6144
@@ -128,21 +161,26 @@ class JetStreamConsumer:
         logger.info("Closed the connection to Stream...")
 
 async def main():
+    time.sleep(60)
     subject = "art.d"
     stream_name = "xdr_ar_t"
     durable_name = "art_consumer_worker"
-
     consumer = JetStreamConsumer(subject, stream_name, durable_name)
     await consumer.connect()
     await consumer.consume()
 
 def run_in_foreground():
-    pyDaemonModule.create_pid("ar-trigger", os.getpid())
-    asyncio.run(main())
+    pyDaemonModule.create_pid("ar_trigger", os.getpid())
+    if cluster == "yes" and node_type == "master":
+        asyncio.run(main())
+    elif cluster == "no" and node_type == "master":
+        asyncio.run(main())
+    else:
+        logger.info(f"nod is {node_type} not use the master node")
 
 def run_in_background():
     pyDaemonModule.pyDaemon()
-    pyDaemonModule.create_pid("ar-trigger", os.getpid())
+    pyDaemonModule.create_pid("ar_trigger", os.getpid())
     run_in_foreground()
 
 if __name__ == "__main__":
@@ -150,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--foreground', action='store_true', help="Run in foreground mode.")
     parser.add_argument('-d', '--debug', action='count', help="Enable debug messages. Use twice to increase verbosity.")
     parser.add_argument('-V', help="Print version", action='store_true', dest="version")
-    parser.add_argument('-t', '--test-config', action='store_false', dest='test_config', help="Test configuration.")
+    parser.add_argument('-t', '--test-config', action='store_true', dest='test_config', help="Test configuration.")
     parser.add_argument('-r', '--root', action='store_true', dest='root', help="Run as root.")
     parser.add_argument('-c', '--config-file', type=str, metavar='config', dest='config_file', help="Configuration file to use.")
     
@@ -158,15 +196,16 @@ if __name__ == "__main__":
 
     # Handle version print
     if args.version:
-        print("AR Trigger Service version 1.0")
-
+        pass
     # Handle test configuration
     if args.test_config:
         pass
+        
 
     # Handle running as root (optional)
     if args.root:
-        pass
+        if os.geteuid() != 0:
+            pass
 
     # Handle configuration file loading (optional)
     if args.config_file:
@@ -174,7 +213,12 @@ if __name__ == "__main__":
 
     # Configure logging for debug mode
     if args.debug:
-        pass
+        if args.debug == 1:
+            pass
+        elif args.debug > 1:
+            pass
+        else:
+            pass
 
     # Handle termination signals for cleanup
     signal.signal(signal.SIGTERM, exit_handler)
